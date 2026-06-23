@@ -1,0 +1,23 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables (contains JWT secrets, ports, keys)
+.env
+.env.local
+
+# Databases & local stores
+*.db
+*.db-journal
+*.sqlite
+
+# Production build outputs
+dist/
+build/
+frontend/dist/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
