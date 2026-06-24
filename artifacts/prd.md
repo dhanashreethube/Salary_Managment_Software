@@ -17,22 +17,46 @@
 Strict isolation of layers. Code is structured into independent concentric directories where dependencies only point inward. The business domain has zero knowledge of databases, web frameworks, routers, or authentication systems.
 
 ### Directory Structure
+
+#### Backend Directory Structure (src/)
 ```
-├── src/
-│   ├── domain/             # Core business models and functional contract definitions
-│   │   ├── entities/       # Pure JavaScript factory functions or data structures (Employee, Salary)
-│   │   └── interfaces/     # Clear layout comments/JSDoc outlining repository expectations
-│   ├── application/        # Use Cases / Application logic orchestration (No external framework dependencies)
-│   │   └── use-cases/      # ListEmployees.js, UpdateSalary.js, GetMetrics.js, LoginUser.js
-│   ├── infrastructure/     # Concrete structural implementations and external tools
-│   │   ├── db/             # Drizzle schemas (schema.js), connection.js, seed.js
-│   │   ├── repositories/   # EmployeeRepositoryImpl.js, UserRepositoryImpl.js
-│   │   └── auth/           # JwtTokenService.js (Handles concrete JWT generation/verification)
-│   ├── presentation/       # Fastify HTTP delivery layers
-│   │   ├── controllers/    # SalaryController.js, AuthController.js
-│   │   ├── hooks/          # authHook.js (preHandler hook to guard protected sessions)
-│   │   └── routes/         # api.js (Fastify routes registration)
-│   └── server.js           # System entry point
+├── domain/             # Core business models and functional contract definitions
+│   ├── entities/       # Pure JavaScript factory functions or data structures (Employee, Salary)
+│   └── interfaces/     # Clear layout comments/JSDoc outlining repository expectations
+├── application/        # Use Cases / Application logic orchestration (No external framework dependencies)
+│   └── use-cases/      # ListEmployees.js, UpdateSalary.js, GetMetrics.js, LoginUser.js
+├── infrastructure/     # Concrete structural implementations and external tools
+│   ├── db/             # Drizzle schemas (schema.js), connection.js, seed.js
+│   ├── repositories/   # EmployeeRepositoryImpl.js, UserRepositoryImpl.js
+│   └── auth/           # JwtTokenService.js (Handles concrete JWT generation/verification)
+├── presentation/       # Fastify HTTP delivery layers
+│   ├── controllers/    # SalaryController.js, AuthController.js
+│   ├── hooks/          # authHook.js (preHandler hook to guard protected sessions)
+│   └── routes/         # api.js (Fastify routes registration)
+└── server.js           # System entry point
+```
+
+#### Frontend Directory Structure (frontend/src/)
+```
+├── presentation/           # HTTP Delivery & React View Layers
+│   ├── components/         # Highly granular, atomic UI modules
+│   │   ├── ui/             # Shared, generic, dumb layout blocks
+│   │   │   ├── Header.jsx   # Global top navbar branding & session exit
+│   │   │   ├── MetricCard.jsx # Isolated layout for top metrics
+│   │   │   └── DataTable.jsx  # Reusable HTML table structure scaffolding
+│   │   ├── dashboard/      # Single-responsibility Dashboard elements
+│   │   │   ├── DashboardOverview.jsx # Container view layout coordinator
+│   │   │   ├── SummaryCardsGrid.jsx  # Grid wrapper for KPI MetricCards
+│   │   │   ├── DepartmentTable.jsx   # Formatted sector for departmental spend
+│   │   │   ├── HeadcountList.jsx     # Geographic progress bar distribution
+│   │   │   └── CurrencyPanels.jsx    # Metric blocks for annual spend clusters
+│   │   └── directory/      # Single-responsibility Directory elements
+│   │       ├── DirectoryOverview.jsx # Grid view layout coordinator
+│   │       ├── SearchBar.jsx         # Magnifying glass text input component
+│   │       ├── FilterSelects.jsx     # Dropdown menus for country/department
+│   │       ├── ControlPanel.jsx      # Composes filters, search, and refresh sync
+│   │       ├── EmployeeRow.jsx       # Layout for a single <tr> table row
+│   │       └── PaginationNav.jsx     # Footer footer boundary controls
 ```
 
 ---

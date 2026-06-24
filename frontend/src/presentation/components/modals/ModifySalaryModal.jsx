@@ -1,85 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { X, DollarSign, Percent, PlusCircle, ShieldAlert, Award } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react";
+import { X, DollarSign, PlusCircle, ShieldAlert, Award } from "lucide-react";
+import { useModifySalary } from "./useModifySalary.js";
 
-export default function SalaryModal({ employee, onClose }) {
-  const queryClient = useQueryClient();
-  const [errorMsg, setErrorMsg] = useState("");
-
-  // Input states representing readable units (e.g. Rupees or Dollars)
-  const [baseSalary, setBaseSalary] = useState("");
-  const [bonus, setBonus] = useState("");
-  const [allowances, setAllowances] = useState("");
-  const [deductions, setDeductions] = useState("");
-
-  // Load existing database parameters into local state divided by 100 for user visibility
-  useEffect(() => {
-    if (employee && employee.compensation) {
-      const comp = employee.compensation;
-      setBaseSalary((comp.baseSalary / 100).toString());
-      setBonus((comp.bonus / 100).toString());
-      setAllowances((comp.allowances / 100).toString());
-      setDeductions((comp.deductions / 100).toString());
-    }
-  }, [employee]);
-
-  // Mutation via TanStack Query
-  const mutation = useMutation({
-    mutationFn: async (payload) => {
-      const res = await fetch(`/api/employees/${employee.id}/compensation`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to update compensation details");
-      }
-      return data;
-    },
-    onSuccess: () => {
-      // Invalidate the cache queries to trigger background fetches
-      queryClient.invalidateQueries(["employees"]);
-      queryClient.invalidateQueries(["metrics"]);
-      onClose(); // Close modal
-    },
-    onError: (err) => {
-      setErrorMsg(err.message);
-    },
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setErrorMsg("");
-
-    const baseVal = parseFloat(baseSalary);
-    const bonusVal = parseFloat(bonus) || 0;
-    const allowanceVal = parseFloat(allowances) || 0;
-    const deductionVal = parseFloat(deductions) || 0;
-
-    // Client-side validations
-    if (isNaN(baseVal) || baseVal < 0) {
-      setErrorMsg("Base salary must be a positive number.");
-      return;
-    }
-    if (bonusVal < 0 || allowanceVal < 0 || deductionVal < 0) {
-      setErrorMsg("Bonuses, allowances, and deductions cannot be negative values.");
-      return;
-    }
-
-    // Prepare payload in lowest common denominator format (cents/pence/paise -> multiply by 100)
-    const payload = {
-      baseSalary: Math.round(baseVal * 100),
-      bonus: Math.round(bonusVal * 100),
-      allowances: Math.round(allowanceVal * 100),
-      deductions: Math.round(deductionVal * 100),
-    };
-
-    mutation.mutate(payload);
-  };
+export default function ModifySalaryModal({ employee, onClose }) {
+  const {
+    baseSalary,
+    setBaseSalary,
+    bonus,
+    setBonus,
+    allowances,
+    setAllowances,
+    deductions,
+    setDeductions,
+    errorMsg,
+    isPending,
+    handleSubmit,
+  } = useModifySalary(employee, onClose);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
@@ -105,20 +41,20 @@ export default function SalaryModal({ employee, onClose }) {
           {/* Employee Meta details */}
           <div className="bg-slate-900/60 rounded-xl p-3.5 border border-white/5 flex justify-between items-center text-xs">
             <div>
-              <span className="text-slate-500 block">Employee Profile</span>
+              <span className="text-slate-505 block">Employee Profile</span>
               <span className="text-white font-bold text-sm">
                 {employee.firstName} {employee.lastName}
               </span>
-              <span className="text-slate-400 block mt-0.5">
+              <span className="text-slate-404 block mt-0.5">
                 {employee.role} ({employee.department})
               </span>
             </div>
             <div className="text-right">
-              <span className="text-slate-500 block">Currency Base</span>
+              <span className="text-slate-505 block">Currency Base</span>
               <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 font-mono font-bold rounded mt-1 inline-block">
                 {employee.currency}
               </span>
-              <span className="text-slate-400 block mt-0.5">{employee.country}</span>
+              <span className="text-slate-404 block mt-0.5">{employee.country}</span>
             </div>
           </div>
 
@@ -199,17 +135,17 @@ export default function SalaryModal({ employee, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              disabled={mutation.isPending}
+              disabled={isPending}
               className="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-sm font-semibold hover:bg-slate-700 hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={isPending}
               className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              {mutation.isPending ? (
+              {isPending ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Updating...

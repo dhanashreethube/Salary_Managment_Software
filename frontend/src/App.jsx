@@ -1,19 +1,14 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { LogOut, LayoutDashboard, TableProperties, ShieldAlert, KeyRound, User, Lock } from "lucide-react";
-import Dashboard from "./components/Dashboard";
-import Directory from "./components/Directory";
-import SalaryModal from "./components/SalaryModal";
+import { LayoutDashboard, TableProperties, ShieldAlert, KeyRound, User, Lock } from "lucide-react";
+import Header from "./presentation/components/ui/Header.jsx";
+import DashboardOverview from "./presentation/components/dashboard/DashboardOverview.jsx";
+import DirectoryOverview from "./presentation/components/directory/DirectoryOverview.jsx";
+import ModifySalaryModal from "./presentation/components/modals/ModifySalaryModal.jsx";
 
 export default function App() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "directory"
-  
-  // Filtering and pagination states for Directory
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [country, setCountry] = useState("");
-  const [department, setDepartment] = useState("");
   
   // Selected employee for the modification modal
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -24,7 +19,7 @@ export default function App() {
   const [loginError, setLoginError] = useState("");
 
   // 1. Fetch authenticated session status
-  const { data: sessionData, isLoading: isSessionLoading, isError: isSessionError } = useQuery({
+  const { data: sessionData, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const res = await fetch("/api/auth/me");
@@ -67,35 +62,6 @@ export default function App() {
       queryClient.setQueryData(["session"], null);
       queryClient.clear(); // Clear all cached data on logout
     },
-  });
-
-  // 4. Fetch metrics data (enabled only when authenticated and tab is dashboard)
-  const { data: metrics, isLoading: isMetricsLoading } = useQuery({
-    queryKey: ["metrics"],
-    queryFn: async () => {
-      const res = await fetch("/api/metrics");
-      if (!res.ok) throw new Error("Failed to fetch dashboard metrics");
-      return res.json();
-    },
-    enabled: !!isAuthenticated && activeTab === "dashboard",
-  });
-
-  // 5. Fetch employees directory (enabled only when authenticated and tab is directory)
-  const { data: directoryData, isLoading: isDirectoryLoading, isFetching: isDirectoryFetching } = useQuery({
-    queryKey: ["employees", page, search, country, department],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "20",
-        search,
-        country,
-        department,
-      });
-      const res = await fetch(`/api/employees?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch directory indexes");
-      return res.json();
-    },
-    enabled: !!isAuthenticated && activeTab === "directory",
   });
 
   const handleLoginSubmit = (e) => {
@@ -148,7 +114,7 @@ export default function App() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-400">Username</label>
               <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-505" />
                 <input
                   type="text"
                   required
@@ -163,7 +129,7 @@ export default function App() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-400">Password</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-505" />
                 <input
                   type="password"
                   required
@@ -203,32 +169,8 @@ export default function App() {
       <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-indigo-600/5 rounded-full blur-3xl -mr-60 -mt-60" />
       <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-violet-600/5 rounded-full blur-3xl -ml-60 -mb-60" />
 
-      {/* Top bar header */}
-      <header className="glass-panel border-x-0 border-t-0 border-b border-white/5 py-4 px-6 md:px-8 relative z-20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-base tracking-wider shadow-md shadow-indigo-500/30">
-            Ω
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-white tracking-tight">Onion Salary</h1>
-            <span className="text-2xs text-indigo-400 font-mono tracking-widest uppercase">Console v1.0</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 bg-slate-900/50 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-slate-300 font-medium">
-            <User size={12} className="text-slate-400" />
-            <span>Admin Control Panel</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-semibold transition-all border border-rose-500/20"
-          >
-            <LogOut size={13} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </header>
+      {/* Global Navbar Header */}
+      <Header onLogout={handleLogout} />
 
       {/* Primary Layout Body */}
       <div className="flex flex-1 flex-col lg:flex-row relative z-10">
@@ -265,31 +207,16 @@ export default function App() {
         {/* Content Workspace Panel */}
         <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
           {activeTab === "dashboard" ? (
-            <Dashboard metrics={metrics} isLoading={isMetricsLoading} />
+            <DashboardOverview />
           ) : (
-            <Directory
-              employees={directoryData?.employees || []}
-              total={directoryData?.total || 0}
-              page={page}
-              setPage={setPage}
-              search={search}
-              setSearch={setSearch}
-              country={country}
-              setCountry={setCountry}
-              department={department}
-              setDepartment={setDepartment}
-              isLoading={isDirectoryLoading}
-              isFetching={isDirectoryFetching}
-              onEditClick={(emp) => setSelectedEmployee(emp)}
-              refetch={() => queryClient.invalidateQueries(["employees"])}
-            />
+            <DirectoryOverview onEditClick={(emp) => setSelectedEmployee(emp)} />
           )}
         </main>
       </div>
 
       {/* Salary Adjustment Modal Layer */}
       {selectedEmployee && (
-        <SalaryModal
+        <ModifySalaryModal
           employee={selectedEmployee}
           onClose={() => setSelectedEmployee(null)}
         />
