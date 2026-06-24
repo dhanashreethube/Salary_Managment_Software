@@ -1,15 +1,15 @@
-import { ListEmployees } from "../../application/use-cases/ListEmployees.js";
-import { UpdateSalary } from "../../application/use-cases/UpdateSalary.js";
-import { GetMetrics } from "../../application/use-cases/GetMetrics.js";
-import { EmployeeRepositoryImpl } from "../../infrastructure/repositories/EmployeeRepositoryImpl.js";
+import { createListEmployees } from "../../application/use-cases/ListEmployees.js";
+import { createUpdateSalary } from "../../application/use-cases/UpdateSalary.js";
+import { createGetMetrics } from "../../application/use-cases/GetMetrics.js";
+import { createEmployeeRepository } from "../../infrastructure/repositories/EmployeeRepositoryImpl.js";
 
-const employeeRepository = new EmployeeRepositoryImpl();
-const listEmployeesUseCase = new ListEmployees(employeeRepository);
-const updateSalaryUseCase = new UpdateSalary(employeeRepository);
-const getMetricsUseCase = new GetMetrics(employeeRepository);
+const employeeRepository = createEmployeeRepository();
+const listEmployeesUseCase = createListEmployees(employeeRepository);
+const updateSalaryUseCase = createUpdateSalary(employeeRepository);
+const getMetricsUseCase = createGetMetrics(employeeRepository);
 
-export class SalaryController {
-  async getEmployees(request, reply) {
+export function createSalaryController() {
+  async function getEmployees(request, reply) {
     try {
       const { page, limit, search, country, department } = request.query || {};
       const result = await listEmployeesUseCase.execute({
@@ -26,7 +26,7 @@ export class SalaryController {
     }
   }
 
-  async updateSalary(request, reply) {
+  async function updateSalary(request, reply) {
     try {
       const { id } = request.params;
       const salaryData = request.body;
@@ -38,7 +38,7 @@ export class SalaryController {
     }
   }
 
-  async getMetrics(request, reply) {
+  async function getMetrics(request, reply) {
     try {
       const metrics = await getMetricsUseCase.execute();
       return metrics;
@@ -47,5 +47,7 @@ export class SalaryController {
       reply.status(statusCode).send({ error: err.message });
     }
   }
+
+  return { getEmployees, updateSalary, getMetrics };
 }
-export default SalaryController;
+export default createSalaryController;

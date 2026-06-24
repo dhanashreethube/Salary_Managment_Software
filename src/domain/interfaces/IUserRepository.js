@@ -21,13 +21,6 @@
  * @returns {Promise<Object>} Created user record
  */
 
-export class IUserRepository {
-  constructor() {
-    if (new.target === IUserRepository) {
-      throw new TypeError("Cannot construct IUserRepository instances directly");
-    }
-  }
+// Functional interfaces do not require class-based abstraction definitions in JavaScript.
+// See JSDoc annotations above for the repository contract.
 
-  async findByUsername(username) { throw new Error("Method not implemented"); }
-  async save(user) { throw new Error("Method not implemented"); }
-}

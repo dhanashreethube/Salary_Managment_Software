@@ -59,17 +59,6 @@
  * @returns {Promise<void>}
  */
 
-export class IEmployeeRepository {
-  constructor() {
-    if (new.target === IEmployeeRepository) {
-      throw new TypeError("Cannot construct IEmployeeRepository instances directly");
-    }
-  }
+// Functional interfaces do not require class-based abstraction definitions in JavaScript.
+// See JSDoc annotations above for the repository contract.
 
-  async findById(id) { throw new Error("Method not implemented"); }
-  async findByEmployeeId(employeeId) { throw new Error("Method not implemented"); }
-  async findAll(params) { throw new Error("Method not implemented"); }
-  async updateCompensation(employeeId, salaryData) { throw new Error("Method not implemented"); }
-  async getFinancialMetrics() { throw new Error("Method not implemented"); }
-  async bulkInsert(employeeRecords, compensationRecords) { throw new Error("Method not implemented"); }
-}

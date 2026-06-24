@@ -1,10 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { users } from "../db/schema.js";
-import { IUserRepository } from "../../domain/interfaces/IUserRepository.js";
-
-export class UserRepositoryImpl extends IUserRepository {
-  async findByUsername(username) {
+export function createUserRepository() {
+  async function findByUsername(username) {
     const results = await db
       .select()
       .from(users)
@@ -15,8 +13,8 @@ export class UserRepositoryImpl extends IUserRepository {
     return results[0];
   }
 
-  async save(user) {
-    const existing = await this.findByUsername(user.username);
+  async function save(user) {
+    const existing = await findByUsername(user.username);
     if (existing) {
       await db
         .update(users)
@@ -35,6 +33,8 @@ export class UserRepositoryImpl extends IUserRepository {
         })
         .run();
     }
-    return this.findByUsername(user.username);
+    return findByUsername(user.username);
   }
+
+  return { findByUsername, save };
 }

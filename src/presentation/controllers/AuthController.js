@@ -1,13 +1,13 @@
-import { LoginUser } from "../../application/use-cases/LoginUser.js";
-import { UserRepositoryImpl } from "../../infrastructure/repositories/UserRepositoryImpl.js";
-import { JwtTokenService } from "../../infrastructure/auth/JwtTokenService.js";
+import { createLoginUser } from "../../application/use-cases/LoginUser.js";
+import { createUserRepository } from "../../infrastructure/repositories/UserRepositoryImpl.js";
+import { createJwtTokenService } from "../../infrastructure/auth/JwtTokenService.js";
 
-const userRepository = new UserRepositoryImpl();
-const tokenService = new JwtTokenService();
-const loginUserUseCase = new LoginUser(userRepository, tokenService);
+const userRepository = createUserRepository();
+const tokenService = createJwtTokenService();
+const loginUserUseCase = createLoginUser(userRepository, tokenService);
 
-export class AuthController {
-  async login(request, reply) {
+export function createAuthController() {
+  async function login(request, reply) {
     try {
       const { username, password } = request.body || {};
       const { user, token } = await loginUserUseCase.execute(username, password);
@@ -28,16 +28,18 @@ export class AuthController {
     }
   }
 
-  async logout(request, reply) {
+  async function logout(request, reply) {
     reply.clearCookie("token", {
       path: "/",
     });
     return { success: true, message: "Logged out successfully" };
   }
 
-  async me(request, reply) {
+  async function me(request, reply) {
     // If request passes through authHook, user details are attached
     return { user: request.user };
   }
+
+  return { login, logout, me };
 }
-export default AuthController;
+export default createAuthController;

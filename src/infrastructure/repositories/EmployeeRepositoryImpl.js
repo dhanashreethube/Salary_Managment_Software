@@ -1,10 +1,8 @@
 import { eq, and, like, or, sql, count, sum, avg } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { employees, compensation } from "../db/schema.js";
-import { IEmployeeRepository } from "../../domain/interfaces/IEmployeeRepository.js";
-
-export class EmployeeRepositoryImpl extends IEmployeeRepository {
-  async findById(id) {
+export function createEmployeeRepository() {
+  async function findById(id) {
     const results = await db
       .select({
         employee: employees,
@@ -24,7 +22,7 @@ export class EmployeeRepositoryImpl extends IEmployeeRepository {
     };
   }
 
-  async findByEmployeeId(employeeId) {
+  async function findByEmployeeId(employeeId) {
     const results = await db
       .select({
         employee: employees,
@@ -44,7 +42,7 @@ export class EmployeeRepositoryImpl extends IEmployeeRepository {
     };
   }
 
-  async findAll({ page = 1, limit = 20, search = "", country = "", department = "" }) {
+  async function findAll({ page = 1, limit = 20, search = "", country = "", department = "" }) {
     const offset = (page - 1) * limit;
     
     // Construct filters
@@ -116,7 +114,7 @@ export class EmployeeRepositoryImpl extends IEmployeeRepository {
     };
   }
 
-  async updateCompensation(employeeId, { baseSalary, bonus, allowances, deductions }) {
+  async function updateCompensation(employeeId, { baseSalary, bonus, allowances, deductions }) {
     // Note: employeeId refers to the database employees.id primary key
     const existing = await db
       .select()
@@ -165,7 +163,7 @@ export class EmployeeRepositoryImpl extends IEmployeeRepository {
     return updated[0];
   }
 
-  async getFinancialMetrics() {
+  async function getFinancialMetrics() {
     // 1. Total headcount metrics (distribute by home country)
     const headcountResults = await db
       .select({
@@ -230,10 +228,19 @@ export class EmployeeRepositoryImpl extends IEmployeeRepository {
     };
   }
 
-  async bulkInsert(employeeRecords, compensationRecords) {
+  async function bulkInsert(employeeRecords, compensationRecords) {
     await db.transaction((tx) => {
       tx.insert(employees).values(employeeRecords).run();
       tx.insert(compensation).values(compensationRecords).run();
     });
   }
+
+  return {
+    findById,
+    findByEmployeeId,
+    findAll,
+    updateCompensation,
+    getFinancialMetrics,
+    bulkInsert
+  };
 }

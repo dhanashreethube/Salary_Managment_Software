@@ -2,11 +2,7 @@
  * Use Case: ListEmployees
  * Handles retrieval of paginated, filtered, and searched employee indexes.
  */
-export class ListEmployees {
-  constructor(employeeRepository) {
-    this.employeeRepository = employeeRepository;
-  }
-
+export function createListEmployees(employeeRepository) {
   /**
    * Execute use case logic
    * @param {Object} params
@@ -16,11 +12,11 @@ export class ListEmployees {
    * @param {string} [params.country=""]
    * @param {string} [params.department=""]
    */
-  async execute({ page = 1, limit = 20, search = "", country = "", department = "" }) {
+  async function execute({ page = 1, limit = 20, search = "", country = "", department = "" }) {
     const activePage = Math.max(1, parseInt(page) || 1);
     const activeLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
 
-    return await this.employeeRepository.findAll({
+    return await employeeRepository.findAll({
       page: activePage,
       limit: activeLimit,
       search,
@@ -28,5 +24,7 @@ export class ListEmployees {
       department,
     });
   }
+
+  return { execute };
 }
-export default ListEmployees;
+export default createListEmployees;

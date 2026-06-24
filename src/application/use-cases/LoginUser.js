@@ -4,12 +4,7 @@ import bcrypt from "bcryptjs";
  * Use Case: LoginUser
  * Authenticates HR administrator credentials and creates a JWT.
  */
-export class LoginUser {
-  constructor(userRepository, tokenService) {
-    this.userRepository = userRepository;
-    this.tokenService = tokenService;
-  }
-
+export function createLoginUser(userRepository, tokenService) {
   /**
    * Execute usecase logic
    * @param {string} username - User input username
@@ -17,7 +12,7 @@ export class LoginUser {
    * @returns {Promise<{ user: Object, token: string }>} Signed session details
    * @throws {Error} if credentials do not match
    */
-  async execute(username, password) {
+  async function execute(username, password) {
     if (!username || !password) {
       const missingErr = new Error("Username and password are required");
       missingErr.statusCode = 400;
@@ -25,7 +20,7 @@ export class LoginUser {
     }
 
     // 1. Fetch user by username
-    const user = await this.userRepository.findByUsername(username);
+    const user = await userRepository.findByUsername(username);
     if (!user) {
       const authErr = new Error("Invalid username or password");
       authErr.statusCode = 401;
@@ -42,12 +37,14 @@ export class LoginUser {
 
     // 3. Issue Token
     const cleanUser = { id: user.id, username: user.username };
-    const token = this.tokenService.generateToken(cleanUser);
+    const token = tokenService.generateToken(cleanUser);
 
     return {
       user: cleanUser,
       token,
     };
   }
+
+  return { execute };
 }
-export default LoginUser;
+export default createLoginUser;

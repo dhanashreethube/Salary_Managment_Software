@@ -15,18 +15,14 @@ export const updateSalarySchema = z.object({
  * Use Case: UpdateSalary
  * Modifies an employee's compensation after rigorous format validation.
  */
-export class UpdateSalary {
-  constructor(employeeRepository) {
-    this.employeeRepository = employeeRepository;
-  }
-
+export function createUpdateSalary(employeeRepository) {
   /**
    * Execute use case logic
    * @param {string} employeeId - The database PK of the target employee
    * @param {Object} salaryData - Object containing baseSalary, bonus, allowances, deductions
    * @throws {Error} if validation fails or target employee does not exist
    */
-  async execute(employeeId, salaryData) {
+  async function execute(employeeId, salaryData) {
     if (!employeeId) {
       throw new Error("Employee ID is required");
     }
@@ -43,7 +39,7 @@ export class UpdateSalary {
     const cleanData = validationResult.data;
 
     // 2. Verify employee exists in the database
-    const employee = await this.employeeRepository.findById(employeeId);
+    const employee = await employeeRepository.findById(employeeId);
     if (!employee) {
       const notFoundError = new Error(`Employee with ID "${employeeId}" not found`);
       notFoundError.statusCode = 404;
@@ -61,7 +57,7 @@ export class UpdateSalary {
     });
 
     // 4. Update the repository
-    const updatedRecord = await this.employeeRepository.updateCompensation(employeeId, {
+    const updatedRecord = await employeeRepository.updateCompensation(employeeId, {
       baseSalary: salaryEntity.baseSalary,
       bonus: salaryEntity.bonus,
       allowances: salaryEntity.allowances,
@@ -70,5 +66,7 @@ export class UpdateSalary {
 
     return updatedRecord;
   }
+
+  return { execute };
 }
-export default UpdateSalary;
+export default createUpdateSalary;

@@ -2,17 +2,13 @@
  * Use Case: GetMetrics
  * Fetches compiled system aggregation statistics for the dashboard view.
  */
-export class GetMetrics {
-  constructor(employeeRepository) {
-    this.employeeRepository = employeeRepository;
-  }
-
+export function createGetMetrics(employeeRepository) {
   /**
    * Execute use case logic
    * @returns {Promise<Object>} Aggregated metrics object
    */
-  async execute() {
-    const rawMetrics = await this.employeeRepository.getFinancialMetrics();
+  async function execute() {
+    const rawMetrics = await employeeRepository.getFinancialMetrics();
     
     // We can enrich the metrics here, for example:
     // Adding aggregate global metrics by converting home currencies to a base reference (e.g. USD)
@@ -84,5 +80,7 @@ export class GetMetrics {
       }),
     };
   }
+
+  return { execute };
 }
-export default GetMetrics;
+export default createGetMetrics;

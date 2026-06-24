@@ -1,6 +1,6 @@
-import { JwtTokenService } from "../../infrastructure/auth/JwtTokenService.js";
+import { createJwtTokenService } from "../../infrastructure/auth/JwtTokenService.js";
 
-const tokenService = new JwtTokenService();
+const tokenService = createJwtTokenService();
 
 /**
  * Fastify preHandler hook to guard authenticated routes.
