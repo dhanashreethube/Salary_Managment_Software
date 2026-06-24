@@ -8,6 +8,7 @@ export function createSalary({
   bonus = 0,
   allowances = 0,
   deductions = 0,
+  comment = null,
   updatedAt = new Date(),
 }) {
   if (!employeeId || typeof employeeId !== "string" || employeeId.trim() === "") {
@@ -38,6 +39,7 @@ export function createSalary({
     bonus: parsedBonus,
     allowances: parsedAllowances,
     deductions: parsedDeductions,
+    comment: comment || null,
     updatedAt,
     grossSalary,
     netSalary,

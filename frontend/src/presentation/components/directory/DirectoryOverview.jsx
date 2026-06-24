@@ -18,8 +18,14 @@ export default function DirectoryOverview({ onEditClick }) {
     handleCountryChange,
     department,
     handleDepartmentChange,
+    sortBy,
+    sortOrder,
+    handleSort,
+    handleLimitChange,
     isLoading,
     isFetching,
+    isError,
+    error,
     handlePrevPage,
     handleNextPage,
     handleReset,
@@ -27,14 +33,16 @@ export default function DirectoryOverview({ onEditClick }) {
   } = useDirectoryLogic();
 
   const headers = [
-    { label: "Employee ID", align: "left" },
-    { label: "Employee Name", align: "left" },
+    { label: "Employee ID", align: "left", sortKey: "employeeId" },
+    { label: "Employee Name", align: "left", sortKey: "firstName" },
     { label: "Department & Role", align: "left" },
     { label: "Country", align: "left" },
-    { label: "Base Salary", align: "right" },
+    { label: "Base Salary", align: "right", sortKey: "baseSalary" },
     { label: "Bonus", align: "right" },
     { label: "Allowance", align: "right" },
     { label: "Deduction", align: "right" },
+    { label: "Joining Date", align: "left", sortKey: "joiningDate" },
+    { label: "Comment", align: "left" },
     { label: "Action", align: "center" },
   ];
 
@@ -46,6 +54,20 @@ export default function DirectoryOverview({ onEditClick }) {
       onEditClick={onEditClick}
     />
   );
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 glass-panel rounded-2xl space-y-4">
+        <span className="text-sm font-semibold text-rose-400">Failed to synchronize directory. {error?.message}</span>
+        <button
+          onClick={handleReset}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors"
+        >
+          Reset and Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -79,6 +101,9 @@ export default function DirectoryOverview({ onEditClick }) {
           isEmpty={!isLoading && employees.length === 0}
           emptyMessage="No employee records found matching your current filter criteria."
           isLoading={isLoading}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={handleSort}
         />
 
         <PaginationNav
@@ -88,6 +113,7 @@ export default function DirectoryOverview({ onEditClick }) {
           limit={limit}
           onPrevPage={handlePrevPage}
           onNextPage={handleNextPage}
+          onLimitChange={handleLimitChange}
         />
       </div>
     </div>

@@ -130,6 +130,8 @@ describe("Onion Architecture - Use Case Unit Tests", () => {
         search: "John",
         country: "India",
         department: "",
+        sortBy: "employeeId",
+        sortOrder: "asc",
       });
       expect(result.employees.length).toBe(1);
       expect(result.total).toBe(1);
@@ -143,6 +145,8 @@ describe("Onion Architecture - Use Case Unit Tests", () => {
 
       expect(mockEmployeeRepository.findAll).toHaveBeenCalledWith({
         page: 1, limit: 20, search: "", country: "", department: "",
+        sortBy: "employeeId",
+        sortOrder: "asc",
       });
     });
 
@@ -255,7 +259,10 @@ describe("Onion Architecture - Use Case Unit Tests", () => {
       const result = await updateSalaryUseCase.execute("emp-1", updatedSalaryData);
 
       expect(mockEmployeeRepository.findById).toHaveBeenCalledWith("emp-1");
-      expect(mockEmployeeRepository.updateCompensation).toHaveBeenCalledWith("emp-1", updatedSalaryData);
+      expect(mockEmployeeRepository.updateCompensation).toHaveBeenCalledWith("emp-1", {
+        ...updatedSalaryData,
+        comment: null,
+      });
       expect(result.baseSalary).toBe(6000000);
     });
 
@@ -363,7 +370,7 @@ describe("Onion Architecture - Use Case Unit Tests", () => {
       const result = await updateSalaryUseCase.execute("emp-1", { baseSalary: 5000000 });
 
       expect(mockEmployeeRepository.updateCompensation).toHaveBeenCalledWith("emp-1", {
-        baseSalary: 5000000, bonus: 0, allowances: 0, deductions: 0,
+        baseSalary: 5000000, bonus: 0, allowances: 0, deductions: 0, comment: null,
       });
       expect(result.baseSalary).toBe(5000000);
     });

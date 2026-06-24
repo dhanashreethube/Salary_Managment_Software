@@ -1,11 +1,21 @@
 import React from "react";
-import { Edit2 } from "lucide-react";
+import { Edit2, CalendarDays, MessageSquareText } from "lucide-react";
 
 export default function EmployeeRow({ employee, formatCurrency, onEditClick }) {
   const base = employee.compensation?.baseSalary || 0;
   const bonus = employee.compensation?.bonus || 0;
   const allowance = employee.compensation?.allowances || 0;
   const deduction = employee.compensation?.deductions || 0;
+  const comment = employee.compensation?.comment || null;
+
+  // Parse and format joining date
+  const formattedJoiningDate = employee.joiningDate
+    ? new Date(employee.joiningDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "—";
 
   return (
     <tr className="hover:bg-white/5 transition-colors">
@@ -38,6 +48,22 @@ export default function EmployeeRow({ employee, formatCurrency, onEditClick }) {
       </td>
       <td className="py-4 px-6 text-right font-mono text-rose-300">
         -{formatCurrency(deduction, employee.currency)}
+      </td>
+      <td className="py-4 px-6">
+        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          <CalendarDays size={12} className="text-slate-500 shrink-0" />
+          <span className="whitespace-nowrap">{formattedJoiningDate}</span>
+        </div>
+      </td>
+      <td className="py-4 px-6 max-w-[160px]">
+        {comment ? (
+          <div className="flex items-start gap-1.5 text-xs text-slate-400" title={comment}>
+            <MessageSquareText size={12} className="text-slate-500 shrink-0 mt-0.5" />
+            <span className="truncate">{comment}</span>
+          </div>
+        ) : (
+          <span className="text-slate-600 text-xs">—</span>
+        )}
       </td>
       <td className="py-4 px-6 text-center">
         <button

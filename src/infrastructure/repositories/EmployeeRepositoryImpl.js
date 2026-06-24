@@ -1,15 +1,47 @@
-import { eq, and, like, or, sql, count, sum, avg } from "drizzle-orm";
+import { eq, and, like, or, sql, count, sum, avg, asc, desc } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { employees, compensation } from "../db/schema.js";
+
+// createEmployeeRepository implementation
 export function createEmployeeRepository() {
+  const latestComp = db
+    .select({
+      id: compensation.id,
+      employeeId: compensation.employeeId,
+      baseSalary: compensation.baseSalary,
+      bonus: compensation.bonus,
+      allowances: compensation.allowances,
+      deductions: compensation.deductions,
+      comment: compensation.comment,
+      updatedAt: compensation.updatedAt,
+      row_num: sql`row_number() over (partition by ${compensation.employeeId} order by ${compensation.updatedAt} desc)`.as("row_num"),
+    })
+    .from(compensation)
+    .as("latest_comp");
+
+  const SORT_COLUMN_MAP = {
+    employeeId: employees.employeeId,
+    firstName: employees.firstName,
+    baseSalary: latestComp.baseSalary,
+    joiningDate: employees.joiningDate,
+  };
+
   async function findById(id) {
     const results = await db
       .select({
         employee: employees,
-        compensation: compensation,
+        compensation: {
+          id: latestComp.id,
+          baseSalary: latestComp.baseSalary,
+          bonus: latestComp.bonus,
+          allowances: latestComp.allowances,
+          deductions: latestComp.deductions,
+          comment: latestComp.comment,
+          updatedAt: latestComp.updatedAt,
+        },
       })
       .from(employees)
-      .leftJoin(compensation, eq(employees.id, compensation.employeeId))
+      .leftJoin(latestComp, and(eq(employees.id, latestComp.employeeId), eq(latestComp.row_num, 1)))
       .where(eq(employees.id, id))
       .all();
 
@@ -18,7 +50,7 @@ export function createEmployeeRepository() {
     const { employee, compensation: comp } = results[0];
     return {
       ...employee,
-      compensation: comp,
+      compensation: comp.id ? comp : null,
     };
   }
 
@@ -26,10 +58,18 @@ export function createEmployeeRepository() {
     const results = await db
       .select({
         employee: employees,
-        compensation: compensation,
+        compensation: {
+          id: latestComp.id,
+          baseSalary: latestComp.baseSalary,
+          bonus: latestComp.bonus,
+          allowances: latestComp.allowances,
+          deductions: latestComp.deductions,
+          comment: latestComp.comment,
+          updatedAt: latestComp.updatedAt,
+        },
       })
       .from(employees)
-      .leftJoin(compensation, eq(employees.id, compensation.employeeId))
+      .leftJoin(latestComp, and(eq(employees.id, latestComp.employeeId), eq(latestComp.row_num, 1)))
       .where(eq(employees.employeeId, employeeId))
       .all();
 
@@ -38,11 +78,11 @@ export function createEmployeeRepository() {
     const { employee, compensation: comp } = results[0];
     return {
       ...employee,
-      compensation: comp,
+      compensation: comp.id ? comp : null,
     };
   }
 
-  async function findAll({ page = 1, limit = 20, search = "", country = "", department = "" }) {
+  async function findAll({ page = 1, limit = 20, search = "", country = "", department = "", sortBy = "employeeId", sortOrder = "asc" }) {
     const offset = (page - 1) * limit;
     
     // Construct filters
@@ -70,6 +110,11 @@ export function createEmployeeRepository() {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Build sort clause from whitelist
+    const sortColumn = SORT_COLUMN_MAP[sortBy] || SORT_COLUMN_MAP.employeeId;
+    const orderFn = sortOrder === "desc" ? desc : asc;
+    const orderClause = orderFn(sortColumn);
+
     // 1. Fetch total count matching search and filters
     const countResult = await db
       .select({ value: count() })
@@ -90,74 +135,63 @@ export function createEmployeeRepository() {
         role: employees.role,
         country: employees.country,
         currency: employees.currency,
+        joiningDate: employees.joiningDate,
         createdAt: employees.createdAt,
         compensation: {
-          id: compensation.id,
-          baseSalary: compensation.baseSalary,
-          bonus: compensation.bonus,
-          allowances: compensation.allowances,
-          deductions: compensation.deductions,
-          updatedAt: compensation.updatedAt,
+          id: latestComp.id,
+          baseSalary: latestComp.baseSalary,
+          bonus: latestComp.bonus,
+          allowances: latestComp.allowances,
+          deductions: latestComp.deductions,
+          comment: latestComp.comment,
+          updatedAt: latestComp.updatedAt,
         },
       })
       .from(employees)
-      .leftJoin(compensation, eq(employees.id, compensation.employeeId))
+      .leftJoin(latestComp, and(eq(employees.id, latestComp.employeeId), eq(latestComp.row_num, 1)))
       .where(whereClause)
+      .orderBy(orderClause)
       .limit(limit)
       .offset(offset);
 
     const records = await query.all();
     
+    // Map records to keep structure same: if compensation has no id, set to null
+    const mappedRecords = records.map(r => ({
+      ...r,
+      compensation: r.compensation.id ? r.compensation : null
+    }));
+    
     return {
-      employees: records,
+      employees: mappedRecords,
       total,
     };
   }
 
-  async function updateCompensation(employeeId, { baseSalary, bonus, allowances, deductions }) {
-    // Note: employeeId refers to the database employees.id primary key
-    const existing = await db
-      .select()
-      .from(compensation)
-      .where(eq(compensation.employeeId, employeeId))
-      .all();
-
+  async function updateCompensation(employeeId, { baseSalary, bonus, allowances, deductions, comment }) {
     const timestamp = new Date();
-
-    if (existing.length === 0) {
-      // Insert new compensation if missing
-      const compId = `comp-custom-${Date.now()}`;
-      await db
-        .insert(compensation)
-        .values({
-          id: compId,
-          employeeId,
-          baseSalary,
-          bonus,
-          allowances,
-          deductions,
-          updatedAt: timestamp,
-        })
-        .run();
-    } else {
-      // Update existing record
-      await db
-        .update(compensation)
-        .set({
-          baseSalary,
-          bonus,
-          allowances,
-          deductions,
-          updatedAt: timestamp,
-        })
-        .where(eq(compensation.employeeId, employeeId))
-        .run();
-    }
+    // Insert new compensation row (keeping history) rather than updating existing
+    const compId = `comp-custom-${Date.now()}`;
+    await db
+      .insert(compensation)
+      .values({
+        id: compId,
+        employeeId,
+        baseSalary,
+        bonus,
+        allowances,
+        deductions,
+        comment: comment || null,
+        updatedAt: timestamp,
+      })
+      .run();
 
     const updated = await db
       .select()
       .from(compensation)
       .where(eq(compensation.employeeId, employeeId))
+      .orderBy(desc(compensation.updatedAt))
+      .limit(1)
       .all();
 
     return updated[0];
@@ -174,34 +208,34 @@ export function createEmployeeRepository() {
       .groupBy(employees.country)
       .all();
 
-    // 2. Departmental expenditure allocations
+    // 2. Departmental expenditure allocations (joining only latest compensation)
     const deptExpenditures = await db
       .select({
         department: employees.department,
-        avgBaseSalary: avg(compensation.baseSalary),
-        avgBonus: avg(compensation.bonus),
-        avgAllowances: avg(compensation.allowances),
-        avgDeductions: avg(compensation.deductions),
-        totalSpend: sum(sql`${compensation.baseSalary} + ${compensation.bonus} + ${compensation.allowances}`),
+        avgBaseSalary: avg(latestComp.baseSalary),
+        avgBonus: avg(latestComp.bonus),
+        avgAllowances: avg(latestComp.allowances),
+        avgDeductions: avg(latestComp.deductions),
+        totalSpend: sum(sql`${latestComp.baseSalary} + ${latestComp.bonus} + ${latestComp.allowances}`),
       })
       .from(employees)
-      .leftJoin(compensation, eq(employees.id, compensation.employeeId))
+      .leftJoin(latestComp, and(eq(employees.id, latestComp.employeeId), eq(latestComp.row_num, 1)))
       .groupBy(employees.department)
       .all();
 
-    // 3. Global run-rate aggregated by currency code
+    // 3. Global run-rate aggregated by currency code (joining only latest compensation)
     const runRatesByCurrency = await db
       .select({
         currency: employees.currency,
-        totalBase: sum(compensation.baseSalary),
-        totalBonus: sum(compensation.bonus),
-        totalAllowances: sum(compensation.allowances),
-        totalDeductions: sum(compensation.deductions),
-        totalGrossSpend: sum(sql`${compensation.baseSalary} + ${compensation.bonus} + ${compensation.allowances}`),
+        totalBase: sum(latestComp.baseSalary),
+        totalBonus: sum(latestComp.bonus),
+        totalAllowances: sum(latestComp.allowances),
+        totalDeductions: sum(latestComp.deductions),
+        totalGrossSpend: sum(sql`${latestComp.baseSalary} + ${latestComp.bonus} + ${latestComp.allowances}`),
         count: count(),
       })
       .from(employees)
-      .leftJoin(compensation, eq(employees.id, compensation.employeeId))
+      .leftJoin(latestComp, and(eq(employees.id, latestComp.employeeId), eq(latestComp.row_num, 1)))
       .groupBy(employees.currency)
       .all();
 

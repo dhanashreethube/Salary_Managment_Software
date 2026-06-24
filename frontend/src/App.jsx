@@ -1,14 +1,34 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useIsFetching, useIsMutating } from "@tanstack/react-query";
 import { LayoutDashboard, TableProperties, ShieldAlert, KeyRound, User, Lock } from "lucide-react";
 import Header from "./presentation/components/ui/Header.jsx";
 import DashboardOverview from "./presentation/components/dashboard/DashboardOverview.jsx";
 import DirectoryOverview from "./presentation/components/directory/DirectoryOverview.jsx";
 import ModifySalaryModal from "./presentation/components/modals/ModifySalaryModal.jsx";
+import ErrorBoundary from "./presentation/components/ui/ErrorBoundary.jsx";
 
 export default function App() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" or "directory"
+  
+  // HTML5 History Routing
+  const getTabFromPath = () => {
+    const path = window.location.pathname.replace("/", "");
+    return ["dashboard", "directory"].includes(path) ? path : "dashboard";
+  };
+  const [activeTab, setActiveTab] = useState(getTabFromPath);
+
+  React.useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getTabFromPath());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigateToTab = (tab) => {
+    window.history.pushState(null, "", "/" + tab);
+    setActiveTab(tab);
+  };
   
   // Selected employee for the modification modal
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -19,7 +39,7 @@ export default function App() {
   const [loginError, setLoginError] = useState("");
 
   // 1. Fetch authenticated session status
-  const { data: sessionData, isLoading: isSessionLoading } = useQuery({
+  const { data: sessionData, isLoading: isSessionLoading, isFetching: isSessionFetching } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const res = await fetch("/api/auth/me");
@@ -28,8 +48,6 @@ export default function App() {
     },
     retry: false, // Don't retry on auth failures
   });
-
-  const isAuthenticated = sessionData && sessionData.user;
 
   // 2. Login mutation
   const loginMutation = useMutation({
@@ -64,6 +82,14 @@ export default function App() {
     },
   });
 
+  const isAuthenticated = !!sessionData?.user;
+  const isCheckingSession = isSessionLoading || (isSessionFetching && !sessionData) || loginMutation.isPending;
+
+  // Track any active queries or mutations (excluding session query itself) to show a skeleton loader
+  const isFetchingQueries = useIsFetching({ predicate: (query) => query.queryKey[0] !== "session" });
+  const isMutatingQueries = useIsMutating();
+  const showSkeletonOverlay = isFetchingQueries > 0 || isMutatingQueries > 0;
+
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     loginMutation.mutate({ username: loginUsername, password: loginPassword });
@@ -74,7 +100,7 @@ export default function App() {
   };
 
   // If session is checking on startup, render a minimal beautiful loader
-  if (isSessionLoading) {
+  if (isCheckingSession) {
     return (
       <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -180,8 +206,8 @@ export default function App() {
             Navigation
           </span>
           <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+            onClick={() => navigateToTab("dashboard")}
+            className={`w-full flex flex-row items-center gap-3 whitespace-nowrap px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === "dashboard"
                 ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                 : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -192,8 +218,8 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setActiveTab("directory")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+            onClick={() => navigateToTab("directory")}
+            className={`w-full flex flex-row items-center gap-3 whitespace-nowrap px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === "directory"
                 ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                 : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -205,11 +231,26 @@ export default function App() {
         </aside>
 
         {/* Content Workspace Panel */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
-          {activeTab === "dashboard" ? (
-            <DashboardOverview />
-          ) : (
-            <DirectoryOverview onEditClick={(emp) => setSelectedEmployee(emp)} />
+        <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full relative">
+          <ErrorBoundary>
+            {activeTab === "dashboard" ? (
+              <DashboardOverview />
+            ) : (
+              <DirectoryOverview onEditClick={(emp) => setSelectedEmployee(emp)} />
+            )}
+          </ErrorBoundary>
+
+          {/* Global Loading State Skeleton Overlay */}
+          {showSkeletonOverlay && (
+            <div className="absolute inset-0 bg-[#070b13]/60 backdrop-blur-[2px] z-40 flex flex-col p-6 md:p-8 space-y-6 pointer-events-none">
+              <div className="h-8 bg-slate-800 rounded w-1/4 animate-pulse" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="h-32 bg-slate-800/40 rounded-2xl border border-white/5 animate-pulse" />
+                <div className="h-32 bg-slate-800/40 rounded-2xl border border-white/5 animate-pulse" />
+                <div className="h-32 bg-slate-800/40 rounded-2xl border border-white/5 animate-pulse" />
+              </div>
+              <div className="flex-1 min-h-[300px] bg-slate-800/40 rounded-2xl border border-white/5 animate-pulse" />
+            </div>
           )}
         </main>
       </div>

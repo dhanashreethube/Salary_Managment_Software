@@ -35,6 +35,38 @@ const locations = [
   { country: "Germany", currency: "EUR", baseSalaryRange: [5000000, 13000000], bonusRange: [400000, 2500000], allowanceRange: [150000, 800000], deductionRange: [400000, 2000000] } // in Cents (1 EUR = 100 Cents)
 ];
 
+const initialComments = [
+  "Initial compensation setup",
+  "Onboarding package",
+  "Standard offer accepted",
+  "Negotiated compensation",
+  "Market rate adjustment",
+  null, // Some employees won't have a comment
+  null,
+];
+
+/**
+ * Generate a deterministic joining date distributed over the past 5 years.
+ * Uses the employee index to produce dates between 2021-06-01 and 2026-06-01.
+ */
+function generateJoiningDate(idx) {
+  // 5-year window: June 2021 to June 2026
+  const startMs = new Date("2021-06-01").getTime();
+  const endMs = new Date("2026-06-01").getTime();
+  const range = endMs - startMs;
+
+  // Deterministic pseudo-random offset based on index
+  const offset = ((idx * 6271 + 1303) % 1000) / 1000;
+  const dateMs = startMs + Math.floor(range * offset);
+  const date = new Date(dateMs);
+
+  // Format as YYYY-MM-DD
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 async function seed() {
   console.log("Starting Seeding Process...");
 
@@ -60,7 +92,7 @@ async function seed() {
   console.log("Admin seeded successfully.");
 
   // 2. Generate and batch seed 10,000 Employees
-  console.log("Generating 10,000 employee records...");
+  console.log("Generating 10,000 employee records with joining dates...");
   const batchSize = 1000;
   const totalRecords = 10000;
 
@@ -96,6 +128,12 @@ async function seed() {
       const allowances = Math.floor(allowanceRange[0] + ((idx * 8581) % (allowanceRange[1] - allowanceRange[0])));
       const deductions = Math.floor(deductionRange[0] + ((idx * 9011) % (deductionRange[1] - deductionRange[0])));
 
+      // Generate deterministic joining date over 5-year span
+      const joiningDate = generateJoiningDate(idx);
+
+      // Pick a deterministic initial comment (some null)
+      const comment = initialComments[idx % initialComments.length];
+
       employeeValues.push({
         id,
         employeeId,
@@ -105,7 +143,8 @@ async function seed() {
         department,
         role,
         country,
-        currency
+        currency,
+        joiningDate,
       });
 
       compensationValues.push({
@@ -114,7 +153,8 @@ async function seed() {
         baseSalary,
         bonus,
         allowances,
-        deductions
+        deductions,
+        comment,
       });
     }
 

@@ -11,13 +11,15 @@ const getMetricsUseCase = createGetMetrics(employeeRepository);
 export function createSalaryController() {
   async function getEmployees(request, reply) {
     try {
-      const { page, limit, search, country, department } = request.query || {};
+      const { page, limit, search, country, department, sortBy, sortOrder } = request.query || {};
       const result = await listEmployeesUseCase.execute({
         page,
         limit,
         search,
         country,
         department,
+        sortBy,
+        sortOrder,
       });
       return result;
     } catch (err) {

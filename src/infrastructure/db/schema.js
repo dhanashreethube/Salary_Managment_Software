@@ -17,6 +17,7 @@ export const employees = sqliteTable("employees", {
   role: text("role").notNull(),
   country: text("country").notNull(),
   currency: text("currency").notNull(),
+  joiningDate: text("joining_date").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .default(sql`(strftime('%s', 'now'))`)
     .notNull(),
@@ -31,6 +32,7 @@ export const compensation = sqliteTable("compensation", {
   bonus: integer("bonus").default(0).notNull(),
   allowances: integer("allowances").default(0).notNull(),
   deductions: integer("deductions").default(0).notNull(),
+  comment: text("comment"),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .default(sql`(strftime('%s', 'now'))`)
     .notNull(),

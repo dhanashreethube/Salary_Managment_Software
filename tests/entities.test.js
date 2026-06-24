@@ -18,6 +18,7 @@ describe("Domain Entities", () => {
       role: "Software Engineer",
       country: "India",
       currency: "INR",
+      joiningDate: "2024-01-15",
     };
 
     it("should create a valid frozen employee object with fullName", () => {

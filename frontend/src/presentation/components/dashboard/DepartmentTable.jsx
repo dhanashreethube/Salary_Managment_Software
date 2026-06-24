@@ -1,15 +1,49 @@
-import React from "react";
+import React, { useState } from "react";
 import { Briefcase } from "lucide-react";
 import DataTable from "../ui/DataTable.jsx";
 
 export default function DepartmentTable({ departmentAllocations = [] }) {
+  const [sortBy, setSortBy] = useState("department");
+  const [sortOrder, setSortOrder] = useState("asc");
+
   const headers = [
-    { label: "Department", align: "left" },
-    { label: "Avg Base Salary", align: "right" },
-    { label: "Avg Bonus", align: "right" },
-    { label: "Avg Allowance", align: "right" },
-    { label: "Avg Deduction", align: "right" },
+    { label: "Department", align: "left", sortKey: "department" },
+    { label: "Avg Base Salary", align: "right", sortKey: "avgBaseSalary" },
+    { label: "Avg Bonus", align: "right", sortKey: "avgBonus" },
+    { label: "Avg Allowance", align: "right", sortKey: "avgAllowance" },
+    { label: "Avg Deduction", align: "right", sortKey: "avgDeduction" },
   ];
+
+  const handleSort = (columnKey) => {
+    if (sortBy === columnKey) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(columnKey);
+      setSortOrder("asc");
+    }
+  };
+
+  const sortedRows = [...departmentAllocations].sort((a, b) => {
+    let valA, valB;
+    if (sortBy === "department") {
+      valA = a.department || "";
+      valB = b.department || "";
+      return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    } else if (sortBy === "avgBaseSalary") {
+      valA = a.avgBaseSalaryReal || 0;
+      valB = b.avgBaseSalaryReal || 0;
+    } else if (sortBy === "avgBonus") {
+      valA = a.avgBonusReal || 0;
+      valB = b.avgBonusReal || 0;
+    } else if (sortBy === "avgAllowance") {
+      valA = a.avgAllowancesReal || 0;
+      valB = b.avgAllowancesReal || 0;
+    } else if (sortBy === "avgDeduction") {
+      valA = a.avgDeductionsReal || 0;
+      valB = b.avgDeductionsReal || 0;
+    }
+    return sortOrder === "asc" ? valA - valB : valB - valA;
+  });
 
   const renderRow = (dept) => (
     <tr key={dept.department} className="hover:bg-white/5 transition-colors">
@@ -40,9 +74,12 @@ export default function DepartmentTable({ departmentAllocations = [] }) {
       </div>
       <DataTable
         headers={headers}
-        rows={departmentAllocations}
+        rows={sortedRows}
         renderRow={renderRow}
         headerCellClassName="pb-3"
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={handleSort}
       />
     </div>
   );

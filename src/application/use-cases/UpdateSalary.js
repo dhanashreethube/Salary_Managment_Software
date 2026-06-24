@@ -9,6 +9,7 @@ export const updateSalarySchema = z.object({
   bonus: z.number().int("Bonus must be an integer").nonnegative("Bonus cannot be negative").default(0),
   allowances: z.number().int("Allowances must be an integer").nonnegative("Allowances cannot be negative").default(0),
   deductions: z.number().int("Deductions must be an integer").nonnegative("Deductions cannot be negative").default(0),
+  comment: z.string().max(500, "Comment must be 500 characters or fewer").optional().nullable(),
 });
 
 /**
@@ -19,7 +20,7 @@ export function createUpdateSalary(employeeRepository) {
   /**
    * Execute use case logic
    * @param {string} employeeId - The database PK of the target employee
-   * @param {Object} salaryData - Object containing baseSalary, bonus, allowances, deductions
+   * @param {Object} salaryData - Object containing baseSalary, bonus, allowances, deductions, comment
    * @throws {Error} if validation fails or target employee does not exist
    */
   async function execute(employeeId, salaryData) {
@@ -54,6 +55,7 @@ export function createUpdateSalary(employeeRepository) {
       bonus: cleanData.bonus,
       allowances: cleanData.allowances,
       deductions: cleanData.deductions,
+      comment: cleanData.comment || null,
     });
 
     // 4. Update the repository
@@ -62,6 +64,7 @@ export function createUpdateSalary(employeeRepository) {
       bonus: salaryEntity.bonus,
       allowances: salaryEntity.allowances,
       deductions: salaryEntity.deductions,
+      comment: salaryEntity.comment,
     });
 
     return updatedRecord;

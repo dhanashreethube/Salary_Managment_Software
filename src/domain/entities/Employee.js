@@ -11,6 +11,7 @@ export function createEmployee({
   role,
   country,
   currency,
+  joiningDate,
   createdAt = new Date(),
 }) {
   if (!employeeId || typeof employeeId !== "string" || employeeId.trim() === "") {
@@ -37,6 +38,9 @@ export function createEmployee({
   if (!currency || typeof currency !== "string" || currency.trim() === "") {
     throw new Error("Invalid Currency");
   }
+  if (!joiningDate || typeof joiningDate !== "string" || joiningDate.trim() === "") {
+    throw new Error("Invalid Joining Date");
+  }
 
   return Object.freeze({
     id,
@@ -48,6 +52,7 @@ export function createEmployee({
     role: role.trim(),
     country: country.trim(),
     currency: currency.trim().toUpperCase(),
+    joiningDate: joiningDate.trim(),
     createdAt,
     fullName: `${firstName.trim()} ${lastName.trim()}`,
   });
